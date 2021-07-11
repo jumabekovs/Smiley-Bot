@@ -28,7 +28,7 @@ async def get_started(message: types.Message):
     chat_id = str(message.chat.id)
     entry = {"chat_id": chat_id}
 
-    with open("info.json", "r+") as f:
+    with open("chat_id.json", "r+") as f:
         data = json.load(f)
         if entry not in data:
             data.append(entry)
@@ -58,23 +58,43 @@ async def smile(call: types.CallbackQuery):
 
 @dp.message_handler()
 async def send_to_us(message: types.Message):
-    await message.bot.send_message(-590906679, f"{message.from_user.first_name} жалуется на {message.text}")
+    chat_id = str(message.chat.id)
+    entry = {"chat_id": chat_id}
+    with open("info.json", "r+") as f:
+        data = json.load(f)
+        try:
+            if entry not in data:
+                await message.bot.send_message(-590906679, f"{message.from_user.first_name} жалуется на {message.text}")
+                await message.answer("Спасибо что уделили время!")
+                data.append(entry)
+                f.seek(0)
+                json.dump(data, f)
+            else:
+                await message.answer("Спасибо, но сегодня вы уже оценили нас!")
+        except Exception as e:
+            print(e)
 
 
 async def notify():
     try:
-        with open("info.json") as f:
+        with open("chat_id.json") as f:
             data = json.load(f)
         for i in data:
-            await bot.send_message(i["chat_id"], "Добрый вечер! Чтобы запустить бота нажмите на /start", parse_mode='markdown')
+            await bot.send_message(i["chat_id"], "Добрый вечер! Чтобы запустить бота нажмите на /start",
+                                   parse_mode='markdown')
     except Exception as e:
         print(e)
 
 
+async def clear_json():
+    with open("info.json", "w") as f:
+        json.dump([], f)
+
 
 async def scheduler():
     try:
-        aioschedule.every().day.at("01:41").do(notify)
+        aioschedule.every().day.at("03:00").do(clear_json)
+        aioschedule.every().day.at("19:00").do(notify)
         while True:
             await aioschedule.run_pending()
             await asyncio.sleep(1)
